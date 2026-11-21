@@ -58,7 +58,7 @@
 			</section>
 			<dialog id="confirm-dialog" class="panel dialog" aria-labelledby="confirm-title" aria-describedby="confirm-question confirm-note">
 				<form id="confirm-form" class="form">
-					<h2 id="confirm-title"></h2>
+					<h2 id="confirm-title" class="dialog-header"></h2>
 					<p id="confirm-question"></p>
 					<p id="confirm-note" hidden></p>
 					<div class="dialog-buttons">
@@ -66,6 +66,7 @@
 						<button id="confirm-submit" type="submit" class="danger"></button>
 					</div>
 				</form>
+				<button type="button" class="dialog-x" data-presses="confirm-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 			</dialog>
 		</main>
 		<!-- include footer.html -->

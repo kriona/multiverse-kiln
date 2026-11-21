@@ -1755,6 +1755,10 @@
 		"message": "Batten down",
 		"source": "Close"
 	},
+	"dialog.x": {
+		"message": "Abandon ship",
+		"source": "Close"
+	},
 	"difficulty.hard": {
 		"message": "Rough Seas",
 		"source": "Hard"

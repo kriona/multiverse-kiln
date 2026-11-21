@@ -49,7 +49,7 @@
 				</div>
 				<dialog id="create-universe-dialog" class="panel dialog" aria-labelledby="create-universe-title">
 					<form id="create-universe-form" class="form">
-						<h2 id="create-universe-title" data-message="home.create.title" data-translation-context="Title of the dialog for making a new universe">Create Universe</h2>
+						<h2 id="create-universe-title" class="dialog-header" data-message="home.create.title" data-translation-context="Title of the dialog for making a new universe">Create Universe</h2>
 						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 							Name
 							<input id="create-universe-name" required />
@@ -75,6 +75,7 @@
 							<button id="create-universe-submit" type="submit" aria-describedby="create-universe-error" data-shortcut="Alt+C" data-message="home.create.submit" data-translation-context="Button that makes the new universe">Create</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="create-universe-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<!-- include two-factor-dialogs.html -->
 			</section>

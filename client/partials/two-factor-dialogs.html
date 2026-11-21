@@ -1,6 +1,6 @@
 <dialog id="two-factor-dialog" class="panel dialog" aria-labelledby="two-factor-dialog-title">
 	<form id="two-factor-dialog-form" class="form" novalidate>
-		<h2 id="two-factor-dialog-title" data-message="profile.twoFactorSetupTitle" data-translation-context="Title of the dialog that sets up two-factor authentication">Turn on two-factor authentication</h2>
+		<h2 id="two-factor-dialog-title" class="dialog-header" data-message="profile.twoFactorSetupTitle" data-translation-context="Title of the dialog that sets up two-factor authentication">Turn on two-factor authentication</h2>
 		<div id="two-factor-dialog-password-step" class="form-group">
 			<p id="two-factor-dialog-intro-password" data-message="profile.twoFactorSetupIntro" data-translation-context="First paragraph of the dialog that sets up two-factor authentication, which asks for the player's password first">With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password.</p>
 			<p id="two-factor-dialog-intro-provider" data-message="profile.twoFactorSetupIntroProvider" data-translation-context="First paragraph of the dialog that sets up two-factor authentication, for an account without a password, which logs in only with Google or Discord; a code emailed to the account checks it's the player first" hidden>With two-factor authentication, logging in with Google or Discord also asks for a code from an app on your phone, so someone who gets into your Google or Discord account still can't get in here. Every other browser logged in to your account is logged out when it turns on.</p>
@@ -43,11 +43,12 @@
 			<button id="two-factor-dialog-enable" type="submit" aria-describedby="two-factor-dialog-error" data-shortcut="Alt+T" data-message="profile.twoFactorEnable" data-translation-context="Button in the dialog that sets up two-factor authentication: checks the code from the authenticator app and turns two-factor authentication on" hidden><!-- icon ph:shield-check -->Turn on</button>
 		</div>
 	</form>
+	<button type="button" class="dialog-x" data-presses="two-factor-dialog-cancel two-factor-dialog-skip" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>
 
 <dialog id="recovery-codes-dialog" class="panel dialog" aria-labelledby="recovery-codes-dialog-title">
 	<div class="form">
-		<h2 id="recovery-codes-dialog-title" data-message="profile.recoveryCodesTitle" data-translation-context="Title of the dialog that shows the player's new recovery codes for two-factor authentication">Save your recovery codes</h2>
+		<h2 id="recovery-codes-dialog-title" class="dialog-header" data-message="profile.recoveryCodesTitle" data-translation-context="Title of the dialog that shows the player's new recovery codes for two-factor authentication">Save your recovery codes</h2>
 		<p id="recovery-codes-dialog-intro" data-message="profile.recoveryCodesIntro" data-translation-context="In the dialog that shows the player's new recovery codes for two-factor authentication">If you lose your phone, each of these codes logs you in once in place of a code from the app. Keep them somewhere safe, such as your password manager. This is the only time they're shown.</p>
 		<ol id="recovery-codes-list" class="recovery-codes" translate="no" aria-describedby="recovery-codes-dialog-intro"></ol>
 		<p id="recovery-codes-status" class="hint" role="status"></p>

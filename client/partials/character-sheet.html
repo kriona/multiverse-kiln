@@ -1,5 +1,5 @@
 <dialog id="character-sheet-dialog" class="panel dialog character-sheet-dialog" aria-labelledby="character-sheet-title" aria-describedby="character-sheet-summary">
-	<div class="character-sheet-header">
+	<div class="dialog-header character-sheet-header">
 		<h2 id="character-sheet-title" tabindex="-1"></h2>
 		<p id="character-sheet-summary" class="character-sheet-summary"></p>
 	</div>
@@ -69,19 +69,21 @@
 		<button id="character-sheet-give" type="button" class="secondary" hidden data-shortcut="Alt+I" data-message="characterSheet.giveItems" data-translation-context="Button on a character's sheet, shown to the universe's creators from the editor's Character List tab, that opens the dialog for choosing items and how many of each to add to what the character carries"><!-- icon ph:gift -->Give Items</button>
 		<button id="character-sheet-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
 	</div>
+	<button type="button" class="dialog-x" data-presses="character-sheet-close" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>
 <dialog id="character-slot-dialog" class="panel dialog character-slot-dialog" aria-labelledby="character-slot-title" aria-describedby="character-slot-about">
-	<h2 id="character-slot-title" tabindex="-1"></h2>
+	<h2 id="character-slot-title" class="dialog-header" tabindex="-1"></h2>
 	<p id="character-slot-about"></p>
 	<ul id="character-slot-choices" class="character-slot-choices"></ul>
 	<p id="character-slot-error" class="form-error" role="alert" hidden></p>
 	<div class="dialog-buttons">
 		<button id="character-slot-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 	</div>
+	<button type="button" class="dialog-x" data-presses="character-slot-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>
 <dialog id="character-appearance-dialog" class="panel dialog character-appearance-dialog" aria-labelledby="character-appearance-title">
 	<form id="character-appearance-form" class="form" novalidate>
-		<h2 id="character-appearance-title" data-message="characterSheet.appearanceTitle" data-translation-context="Title of the dialog, opened from a character's sheet, that changes how their avatar (the picture of the character) is drawn">Appearance</h2>
+		<h2 id="character-appearance-title" class="dialog-header" data-message="characterSheet.appearanceTitle" data-translation-context="Title of the dialog, opened from a character's sheet, that changes how their avatar (the picture of the character) is drawn">Appearance</h2>
 		<div id="character-appearance-choices" class="appearance-choices"></div>
 		<p id="character-appearance-error" class="form-error" role="alert" hidden></p>
 		<div class="dialog-buttons">
@@ -89,10 +91,11 @@
 			<button id="character-appearance-save" type="submit" data-shortcut="Alt+S" aria-describedby="character-appearance-error" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 		</div>
 	</form>
+	<button type="button" class="dialog-x" data-presses="character-appearance-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>
 <dialog id="character-discard-dialog" class="panel dialog" aria-labelledby="character-discard-title" aria-describedby="character-discard-question character-discard-unequips">
 	<form id="character-discard-form" class="form" novalidate>
-		<h2 id="character-discard-title"></h2>
+		<h2 id="character-discard-title" class="dialog-header"></h2>
 		<p id="character-discard-question"></p>
 		<label id="character-discard-quantity-label">
 			<span id="character-discard-quantity-text"></span>
@@ -105,10 +108,11 @@
 			<button id="character-discard-confirm" type="submit" class="danger" aria-describedby="character-discard-error" data-message="characterSheet.discardConfirm" data-translation-context="Button, in the dialog that asks how many of an item to discard from what a character carries, that discards them at once"><!-- icon ph:trash -->Discard</button>
 		</div>
 	</form>
+	<button type="button" class="dialog-x" data-presses="character-discard-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>
 <dialog id="character-give-dialog" class="panel dialog" aria-labelledby="character-give-title">
 	<form id="character-give-form" class="form" novalidate>
-		<h2 id="character-give-title"></h2>
+		<h2 id="character-give-title" class="dialog-header"></h2>
 		<label>
 			<span data-message="characterSheet.giveTo" data-translation-context="Label of the field, in the dialog opened by Give in an item's menu on a character's sheet, for which character in the group to give the item to">Give to</span>
 			<select id="character-give-receiver" required></select>
@@ -124,9 +128,10 @@
 			<button id="character-give-confirm" type="submit" aria-describedby="character-give-error" data-shortcut="Alt+G" data-message="characterSheet.giveConfirm" data-translation-context="Button, in the dialog opened by Give in an item's menu on a character's sheet, that gives the item to the character chosen at once"><!-- icon ph:hand-arrow-up -->Give</button>
 		</div>
 	</form>
+	<button type="button" class="dialog-x" data-presses="character-give-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>
 <dialog id="item-inspect-dialog" class="panel dialog item-inspect-dialog" aria-labelledby="item-inspect-title" aria-describedby="item-inspect-description">
-	<div class="item-inspect-heading">
+	<div class="dialog-header item-inspect-heading">
 		<h2 id="item-inspect-title" tabindex="-1"></h2>
 		<div id="item-inspect-menu"></div>
 	</div>
@@ -135,9 +140,10 @@
 	<div class="dialog-buttons">
 		<button id="item-inspect-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
 	</div>
+	<button type="button" class="dialog-x" data-presses="item-inspect-close" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>
 <dialog id="character-leave-dialog" class="panel dialog" aria-labelledby="character-leave-title" aria-describedby="character-leave-reason character-leave-question">
-	<h2 id="character-leave-title"></h2>
+	<h2 id="character-leave-title" class="dialog-header"></h2>
 	<p id="character-leave-reason" hidden></p>
 	<p id="character-leave-question"></p>
 	<p id="character-leave-error" class="form-error" role="alert" hidden></p>
@@ -145,17 +151,19 @@
 		<button id="character-leave-cancel" type="button" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 		<button id="character-leave-confirm" type="button" class="danger" aria-describedby="character-leave-error"></button>
 	</div>
+	<button type="button" class="dialog-x" data-presses="character-leave-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>
 <dialog id="character-delete-dialog" class="panel dialog" aria-labelledby="character-delete-title" aria-describedby="character-delete-question">
-	<h2 id="character-delete-title" data-message="characterDelete.title" data-translation-context="Title of the dialog that asks whether to delete a character">Delete Character</h2>
+	<h2 id="character-delete-title" class="dialog-header" data-message="characterDelete.title" data-translation-context="Title of the dialog that asks whether to delete a character">Delete Character</h2>
 	<p id="character-delete-question"></p>
 	<div class="dialog-buttons">
 		<button id="character-delete-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 		<button id="character-delete-confirm" type="button" class="danger" data-message="characterDelete.confirm" data-translation-context="Button in the dialog asking whether to delete a character that goes on to the last question before deleting them"><!-- icon ph:trash -->Delete</button>
 	</div>
+	<button type="button" class="dialog-x" data-presses="character-delete-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>
 <dialog id="character-farewell-dialog" class="panel dialog character-farewell-dialog" aria-labelledby="character-farewell-title" aria-describedby="character-farewell-question">
-	<h2 id="character-farewell-title" data-message="characterDelete.title" data-translation-context="Title of the dialog that asks whether to delete a character">Delete Character</h2>
+	<h2 id="character-farewell-title" class="dialog-header" data-message="characterDelete.title" data-translation-context="Title of the dialog that asks whether to delete a character">Delete Character</h2>
 	<p id="character-farewell-question"></p>
 	<p id="character-farewell-error" class="form-error" role="alert" hidden></p>
 	<div class="dialog-buttons character-farewell-buttons">
@@ -165,4 +173,5 @@
 		</div>
 		<button id="character-farewell-cancel" type="button" data-message="characterDelete.mistake" data-translation-context="Button that closes the last question before deleting a character, the player's account or a universe, keeping it. A playful way of saying Cancel">I've Made A Terrible Mistake</button>
 	</div>
+	<button type="button" class="dialog-x" data-presses="character-farewell-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>

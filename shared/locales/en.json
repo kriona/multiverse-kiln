@@ -1755,6 +1755,10 @@
 		"defaultMessage": "Close",
 		"description": "Button that closes a dialog that only shows something, with nothing to change"
 	},
+	"dialog.x": {
+		"defaultMessage": "Close",
+		"description": "The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer"
+	},
 	"difficulty.hard": {
 		"defaultMessage": "Hard",
 		"description": "Name of the default difficulty level whose mobs (monsters and enemies) are 50% harder"

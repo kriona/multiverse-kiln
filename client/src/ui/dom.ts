@@ -444,3 +444,28 @@ export function showNoticeScreen(message: string, title?: string): void
 	setPageTitle(title);
 	showScreen('notice');
 }
+
+/**
+ * Makes the X at the top of each dialog press the dialog's Cancel or Close button, so closing it that way
+ * does just what the button does, such as asking before unsaved changes are lost. The X's data-presses
+ * names the button by ID, or several for a dialog whose button changes, of which it presses the one shown
+ * (the dialog that turns on 2FA has Skip Setup in Cancel's place after a universe is created)
+ */
+export function startDialogXs(): void
+{
+	document.addEventListener('click', (event) =>
+	{
+		const x = ((event.target instanceof Element) ? event.target.closest<HTMLButtonElement>('button.dialog-x') : null);
+
+		if (x === null)
+		{
+			return;
+		}
+
+		(x.dataset.presses ?? '')
+			.split(' ')
+			.map((id) => getElement(id, HTMLButtonElement))
+			.find((button) => !button.hidden)
+			?.click();
+	});
+}

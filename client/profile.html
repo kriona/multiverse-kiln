@@ -193,7 +193,7 @@
 
 			<dialog id="email-dialog" class="panel dialog" aria-labelledby="email-dialog-title">
 				<form id="email-dialog-form" class="form" novalidate>
-					<h2 id="email-dialog-title" data-message="profile.changeEmailTitle" data-translation-context="Title of the dialog that changes the player's email address">Change your email address</h2>
+					<h2 id="email-dialog-title" class="dialog-header" data-message="profile.changeEmailTitle" data-translation-context="Title of the dialog that changes the player's email address">Change your email address</h2>
 					<p id="email-dialog-intro"></p>
 					<!-- Not shown: tells password managers which account the password is for -->
 					<input id="email-dialog-username" type="email" autocomplete="username" hidden />
@@ -231,11 +231,12 @@
 						<button id="email-dialog-confirm" type="submit" aria-describedby="email-dialog-error" data-shortcut="Alt+C" data-message="profile.changeEmailSubmit" data-translation-context="Button in the dialog that changes the player's email address: checks the emailed code and makes the new address the account's" hidden><!-- icon ph:check -->Change email</button>
 					</div>
 				</form>
+				<button type="button" class="dialog-x" data-presses="email-dialog-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 			</dialog>
 
 			<dialog id="password-dialog" class="panel dialog" aria-labelledby="password-dialog-title">
 				<form id="password-dialog-form" class="form" novalidate>
-					<h2 id="password-dialog-title" data-message="profile.changePasswordTitle" data-translation-context="Title of the dialog that changes the player's password">Change your password</h2>
+					<h2 id="password-dialog-title" class="dialog-header" data-message="profile.changePasswordTitle" data-translation-context="Title of the dialog that changes the player's password">Change your password</h2>
 					<p data-message="profile.changePasswordIntro" data-translation-context="In the dialog that changes the player's password">Every other browser logged in to your account is logged out when the password changes.</p>
 					<!-- Not shown: tells password managers which account the new password is for -->
 					<input id="password-dialog-email" type="email" autocomplete="username" hidden />
@@ -260,13 +261,14 @@
 						<button id="password-dialog-submit" type="submit" aria-describedby="password-dialog-error" data-shortcut="Alt+S" data-message="profile.savePassword" data-translation-context="Button in the dialog that changes the player's password: saves the new one"><!-- icon ph:key -->Save password</button>
 					</div>
 				</form>
+				<button type="button" class="dialog-x" data-presses="password-dialog-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 			</dialog>
 
 			<!-- include two-factor-dialogs.html -->
 
 			<dialog id="two-factor-confirm-dialog" class="panel dialog" aria-labelledby="two-factor-confirm-title">
 				<form id="two-factor-confirm-form" class="form" novalidate>
-					<h2 id="two-factor-confirm-title"></h2>
+					<h2 id="two-factor-confirm-title" class="dialog-header"></h2>
 					<p id="two-factor-confirm-intro"></p>
 					<p id="two-factor-confirm-universes" hidden></p>
 					<p id="two-factor-confirm-email-note" hidden></p>
@@ -296,11 +298,12 @@
 						<button id="two-factor-confirm-codes" type="submit" aria-describedby="two-factor-confirm-error" data-shortcut="Alt+M" data-message="profile.makeRecoveryCodes" data-translation-context="Button in the dialog that makes new recovery codes: checks the password (or the emailed code) and the authenticator code, and replaces the old codes with new ones"><!-- icon ph:list-numbers -->Make new codes</button>
 					</div>
 				</form>
+				<button type="button" class="dialog-x" data-presses="two-factor-confirm-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 			</dialog>
 
 			<dialog id="provider-link-dialog" class="panel dialog" aria-labelledby="provider-link-dialog-title">
 				<form id="provider-link-dialog-form" class="form" novalidate>
-					<h2 id="provider-link-dialog-title"></h2>
+					<h2 id="provider-link-dialog-title" class="dialog-header"></h2>
 					<p id="provider-link-dialog-intro"></p>
 					<!-- Not shown: tells password managers which account the password is for -->
 					<input id="provider-link-dialog-email" type="email" autocomplete="username" hidden />
@@ -329,11 +332,12 @@
 						<button id="provider-link-dialog-submit" type="submit" aria-describedby="provider-link-dialog-error" data-shortcut="Alt+C" data-message="profile.linkContinue" data-translation-context="Button in the dialog that links a Google or Discord login from the player's own profile: checks the password, or the emailed code, and the authenticator code, then goes to Google or Discord to choose the account to link"><!-- icon ph:link -->Continue</button>
 					</div>
 				</form>
+				<button type="button" class="dialog-x" data-presses="provider-link-dialog-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 			</dialog>
 
 			<dialog id="account-delete-dialog" class="panel dialog" aria-labelledby="account-delete-title">
 				<form id="account-delete-form" class="form" novalidate>
-					<h2 id="account-delete-title" data-message="profile.deleteAccountTitle" data-translation-context="Title of both dialogs that delete the player's account: the first, which says what it does, and the second, which checks it's them">Delete your account</h2>
+					<h2 id="account-delete-title" class="dialog-header" data-message="profile.deleteAccountTitle" data-translation-context="Title of both dialogs that delete the player's account: the first, which says what it does, and the second, which checks it's them">Delete your account</h2>
 					<p data-message="profile.deleteAccountIntro" data-translation-context="In the dialog that deletes the player's account, before what it asks">Your profile and characters are deleted, and can't be brought back.</p>
 					<p id="account-delete-anchors" hidden data-message="profile.deleteAccountAnchors" data-translation-context="In the dialog that deletes the player's account, shown when one or more of their characters is the anchor being of a group">Groups whose anchor being is one of your characters are disbanded.</p>
 					<p data-message="profile.deleteAccountDownload" data-translation-context="In the dialog that deletes the player's account, after what deleting it does: the profile has a button that downloads the player's data">Download your data first to keep a copy.</p>
@@ -349,11 +353,12 @@
 						<button id="account-delete-submit" type="submit" class="danger" aria-describedby="account-delete-error" disabled data-message="profile.deleteAccountNext" data-translation-context="Button in the first dialog that deletes the player's account: checks a choice was made for each universe, then opens a second dialog that checks it's the player before deleting the account"><!-- icon ph:trash -->Delete my account</button>
 					</div>
 				</form>
+				<button type="button" class="dialog-x" data-presses="account-delete-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 			</dialog>
 
 			<dialog id="account-delete-confirm-dialog" class="panel dialog" aria-labelledby="account-delete-confirm-title" aria-describedby="account-delete-confirm-question">
 				<form id="account-delete-confirm-form" class="form" novalidate>
-					<h2 id="account-delete-confirm-title" data-message="profile.deleteAccountTitle" data-translation-context="Title of both dialogs that delete the player's account: the first, which says what it does, and the second, which checks it's them">Delete your account</h2>
+					<h2 id="account-delete-confirm-title" class="dialog-header" data-message="profile.deleteAccountTitle" data-translation-context="Title of both dialogs that delete the player's account: the first, which says what it does, and the second, which checks it's them">Delete your account</h2>
 					<p id="account-delete-confirm-question" data-message="profile.deleteAccountFarewell" data-translation-context="In the second dialog that deletes the player's account, above the password or other fields that check it's them. Playful: the word permanent is joked about as a very long time, as in the last dialog before deleting a character">Are you absolutely sure you want to delete your account? This is permanent (a very long time!) and cannot be undone.</p>
 					<!-- Not shown: tells password managers which account the password is for -->
 					<input id="account-delete-email" type="email" autocomplete="username" hidden />
@@ -389,6 +394,7 @@
 						<button id="account-delete-confirm-cancel" type="button" data-message="characterDelete.mistake" data-translation-context="Button that closes the last question before deleting a character, the player's account or a universe, keeping it. A playful way of saying Cancel">I've Made A Terrible Mistake</button>
 					</div>
 				</form>
+				<button type="button" class="dialog-x" data-presses="account-delete-confirm-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 			</dialog>
 
 			<!-- include character-sheet.html -->

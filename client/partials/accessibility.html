@@ -2,10 +2,11 @@
 <div id="announcer-urgent" class="visually-hidden" aria-live="assertive"></div>
 <div id="toasts" class="toasts"></div>
 <dialog id="shortcuts-dialog" class="panel dialog" aria-labelledby="shortcuts-title">
-	<h2 id="shortcuts-title" data-message="shortcuts.title" data-translation-context="Title of the dialog listing the keyboard shortcuts that work on the screen">Keyboard shortcuts</h2>
+	<h2 id="shortcuts-title" class="dialog-header" data-message="shortcuts.title" data-translation-context="Title of the dialog listing the keyboard shortcuts that work on the screen">Keyboard shortcuts</h2>
 	<p class="shortcuts-explanation" data-message="shortcuts.explanation" data-translation-context="Explains the list of keyboard shortcuts; {key} is the name of the Alt key (Option on a Mac)">The shortcuts that work on this screen. To press a button, hold <kbd data-argument="key" data-keys="Alt" translate="no">Alt</kbd> and press its underlined letter.</p>
 	<dl id="shortcuts-list" class="shortcuts-list"></dl>
 	<div class="dialog-buttons">
 		<button id="shortcuts-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
 	</div>
+	<button type="button" class="dialog-x" data-presses="shortcuts-close" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 </dialog>

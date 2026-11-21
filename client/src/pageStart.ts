@@ -2,6 +2,7 @@ import { startLocalization } from './localization';
 import { connectToServer, type ServerConnection } from './network/serverConnection';
 import { startPageLifecycle } from './pageLifecycle';
 import { startAccountMenu } from './ui/accountMenu';
+import { startDialogXs } from './ui/dom';
 import { startItemNotices } from './ui/itemNotices';
 import { startLanguagePicker } from './ui/languagePicker';
 import { startShortcuts } from './ui/shortcuts';
@@ -22,7 +23,7 @@ export interface StartedPage
 /**
  * Starts what every page with the site's toolbar has, then connects to the server: the page in the
  * player's language, the account menu, news of the player's characters' items, the language picker, the
- * site's social links and the keyboard shortcuts. Every such page joins the session room, so having any of them open counts as using the
+ * site's social links, the keyboard shortcuts and the X at the top of each dialog. Every such page joins the session room, so having any of them open counts as using the
  * session, its account menu follows the player logging in and out in other windows, and features that
  * work on every page (such as chat) have a connection to use. The login page starts on its own
  *
@@ -44,6 +45,7 @@ export async function startPage(): Promise<StartedPage>
 	startLanguagePicker();
 	void startSiteSocials();
 	startShortcuts();
+	startDialogXs();
 
 	return({ server });
 }

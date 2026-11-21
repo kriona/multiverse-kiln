@@ -924,7 +924,7 @@
 				<dialog id="translation-dialog" class="panel dialog option-dialog" aria-labelledby="translation-dialog-title">
 					<form id="translation-form" class="form">
 						<fieldset class="plain">
-							<h2 id="translation-dialog-title"></h2>
+							<h2 id="translation-dialog-title" class="dialog-header"></h2>
 							<div class="field-label">
 								<span id="translation-source-label" data-message="editor.translations.source" data-translation-context="Heading of the column on the editor's Translations tab with each piece of text in the universe's source language, and the label of the text in the dialog that translates it">Source text</span>
 								<div id="translation-source" class="translation-source" aria-labelledby="translation-source-label"></div>
@@ -956,10 +956,11 @@
 							</div>
 						</fieldset>
 					</form>
+					<button type="button" class="dialog-x" data-presses="translation-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="markdown-link-dialog" class="panel dialog" aria-labelledby="markdown-link-title">
 					<form id="markdown-link-form" class="form" novalidate>
-						<h2 id="markdown-link-title" data-message="markdown.linkDialog.title" data-translation-context="Title of the dialog that adds a link to a Markdown field's rich text, such as a universe's long description, or changes the link at the cursor">Link</h2>
+						<h2 id="markdown-link-title" class="dialog-header" data-message="markdown.linkDialog.title" data-translation-context="Title of the dialog that adds a link to a Markdown field's rich text, such as a universe's long description, or changes the link at the cursor">Link</h2>
 						<label data-message="markdown.linkDialog.address" data-translation-context="Label of the field for the web or email address a link goes to, in the dialog that adds a link to a Markdown field's rich text">
 							Address
 							<input id="markdown-link-address" type="url" required />
@@ -970,11 +971,12 @@
 							<button id="markdown-link-apply" type="submit" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="markdown-link-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="editor-dialog" class="panel dialog option-dialog" aria-labelledby="editor-dialog-title">
 					<form id="editor-form" class="form">
 						<fieldset class="plain">
-							<h2 id="editor-dialog-title"></h2>
+							<h2 id="editor-dialog-title" class="dialog-header"></h2>
 							<div id="editor-player-field" class="form-group">
 								<div class="field-label">
 									<span id="editor-player-label" data-message="editor.editors.player" data-translation-context="Label of the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add by name or username">Player</span>
@@ -1025,11 +1027,12 @@
 							</div>
 						</fieldset>
 					</form>
+					<button type="button" class="dialog-x" data-presses="editor-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="item-dialog" class="panel dialog" aria-labelledby="item-dialog-title">
 					<form id="item-form" class="form">
 						<fieldset id="item-fields" class="plain">
-							<h2 id="item-dialog-title"></h2>
+							<h2 id="item-dialog-title" class="dialog-header"></h2>
 							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="item-name" required />
@@ -1074,10 +1077,11 @@
 							</div>
 						</fieldset>
 					</form>
+					<button type="button" class="dialog-x" data-presses="item-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="item-select-dialog" class="panel dialog item-select-dialog" aria-labelledby="item-select-title">
 					<form id="item-select-form" class="form" novalidate>
-						<h2 id="item-select-title" data-message="editor.itemSelect.title" data-translation-context="Title of the dialog for choosing items and how many of each, e.g. for the equipment characters start with">Choose Items</h2>
+						<h2 id="item-select-title" class="dialog-header" data-message="editor.itemSelect.title" data-translation-context="Title of the dialog for choosing items and how many of each, e.g. for the equipment characters start with">Choose Items</h2>
 						<div class="filters">
 							<input id="item-select-search" type="search" placeholder="Search by name" aria-label="Search items by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
 							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, of the filter for it on the Items tab and in the dialog for choosing items, and of an item's kind in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab">
@@ -1100,11 +1104,12 @@
 							<button id="item-select-submit" type="submit" aria-describedby="item-select-error" data-shortcut="Alt+C" data-message="editor.itemSelect.submit" data-translation-context="Button that chooses the items selected in the dialog, with how many of each">Choose</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="item-select-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="race-dialog" class="panel dialog option-dialog" aria-labelledby="race-dialog-title">
 					<form id="race-form" class="form">
 						<fieldset id="race-fields" class="plain">
-							<h2 id="race-dialog-title"></h2>
+							<h2 id="race-dialog-title" class="dialog-header"></h2>
 							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="race-name" required />
@@ -1181,11 +1186,12 @@
 							</div>
 						</fieldset>
 					</form>
+					<button type="button" class="dialog-x" data-presses="race-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="class-dialog" class="panel dialog option-dialog" aria-labelledby="class-dialog-title">
 					<form id="class-form" class="form">
 						<fieldset id="class-fields" class="plain">
-							<h2 id="class-dialog-title"></h2>
+							<h2 id="class-dialog-title" class="dialog-header"></h2>
 							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="class-name" required />
@@ -1258,11 +1264,12 @@
 							</div>
 						</fieldset>
 					</form>
+					<button type="button" class="dialog-x" data-presses="class-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="theme-dialog" class="panel dialog option-dialog" aria-labelledby="theme-dialog-title">
 					<form id="theme-form" class="form">
 						<fieldset id="theme-fields" class="plain">
-							<h2 id="theme-dialog-title"></h2>
+							<h2 id="theme-dialog-title" class="dialog-header"></h2>
 							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="theme-name" required />
@@ -1289,11 +1296,12 @@
 							</div>
 						</fieldset>
 					</form>
+					<button type="button" class="dialog-x" data-presses="theme-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="difficulty-dialog" class="panel dialog option-dialog" aria-labelledby="difficulty-dialog-title">
 					<form id="difficulty-form" class="form">
 						<fieldset id="difficulty-fields" class="plain">
-							<h2 id="difficulty-dialog-title"></h2>
+							<h2 id="difficulty-dialog-title" class="dialog-header"></h2>
 							<label class="checkbox" data-message="editor.difficultyLevel.default" data-translation-context="Checkbox for whether a difficulty level is the one a new group starts on; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="difficulty-default" type="checkbox" />
 								Default
@@ -1321,20 +1329,22 @@
 							</div>
 						</fieldset>
 					</form>
+					<button type="button" class="dialog-x" data-presses="difficulty-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="rulebook-dialog" class="panel dialog rulebook-dialog" aria-labelledby="rulebook-dialog-title">
-					<h2 id="rulebook-dialog-title"></h2>
+					<h2 id="rulebook-dialog-title" class="dialog-header"></h2>
 					<p class="hint" data-message="editor.rulebook.hint" data-translation-context="Explains the dialog listing the races, classes and themes a book of game rules brings to a universe, opened from the Rulebooks table on the editor's Ruleset tab">The book brings these to the universe while it is on. Disable each one on the Characters tab.</p>
 					<p id="rulebook-dialog-status" role="status"></p>
 					<div id="rulebook-contents" class="rulebook-contents"></div>
 					<div class="dialog-buttons">
 						<button id="rulebook-dialog-close" type="button" class="secondary" autofocus data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
 					</div>
+					<button type="button" class="dialog-x" data-presses="rulebook-dialog-close" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="tile-dialog" class="panel dialog" aria-labelledby="tile-dialog-title">
 					<form id="tile-form" class="form">
 						<fieldset id="tile-fields" class="plain">
-							<h2 id="tile-dialog-title"></h2>
+							<h2 id="tile-dialog-title" class="dialog-header"></h2>
 							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="tile-name" required />
@@ -1401,10 +1411,11 @@
 							</div>
 						</fieldset>
 					</form>
+					<button type="button" class="dialog-x" data-presses="tile-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="conflict-dialog" class="panel dialog" aria-labelledby="conflict-title" aria-describedby="conflict-explanation">
 					<form id="conflict-form" class="form">
-						<h2 id="conflict-title" data-message="editor.conflict.title" data-translation-context="Title of the dialog the editor's Save opens when other editors saved different values for settings the player also changed, asking whose to keep">Settings Changed by Others</h2>
+						<h2 id="conflict-title" class="dialog-header" data-message="editor.conflict.title" data-translation-context="Title of the dialog the editor's Save opens when other editors saved different values for settings the player also changed, asking whose to keep">Settings Changed by Others</h2>
 						<p id="conflict-explanation" data-message="editor.conflict.explanation" data-translation-context="Explains the dialog that asks, for each setting another editor saved a different value for since the player loaded it, whether to keep the player's value or take the other editor's">Other editors saved different values for some of the settings you changed. Choose which to keep for each, then save.</p>
 						<div id="conflict-choices" class="form-group"></div>
 						<div class="dialog-buttons">
@@ -1412,10 +1423,11 @@
 							<button id="conflict-submit" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="conflict-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="impact-dialog" class="panel dialog" aria-labelledby="impact-title" aria-describedby="impact-explanation">
 					<form id="impact-form" class="form">
-						<h2 id="impact-title" data-message="editor.impact.title" data-translation-context="Title of the dialog the editor's Save opens when the changes disable a race, class, item or area that characters are using, or make groups smaller than some are, asking what should happen to them">Players Are Affected</h2>
+						<h2 id="impact-title" class="dialog-header" data-message="editor.impact.title" data-translation-context="Title of the dialog the editor's Save opens when the changes disable a race, class, item or area that characters are using, or make groups smaller than some are, asking what should happen to them">Players Are Affected</h2>
 						<p id="impact-explanation" data-message="editor.impact.explanation" data-translation-context="Explains the dialog that asks what should happen to characters and groups using something the save disables or limits">These changes affect characters players are using. Choose what happens to them, then save.</p>
 						<div id="impact-choices" class="form-group"></div>
 						<div class="dialog-buttons">
@@ -1423,10 +1435,11 @@
 							<button id="impact-submit" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="impact-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="start-draft-dialog" class="panel dialog" aria-labelledby="start-draft-title" aria-describedby="start-draft-explanation start-draft-overwrite start-draft-unsaved">
 					<form id="start-draft-form" class="form">
-						<h2 id="start-draft-title" data-message="editor.startDraft.title" data-translation-context="Title of the dialog the editor's Start Draft button opens, explaining drafts before one is started">Start a Draft</h2>
+						<h2 id="start-draft-title" class="dialog-header" data-message="editor.startDraft.title" data-translation-context="Title of the dialog the editor's Start Draft button opens, explaining drafts before one is started">Start a Draft</h2>
 						<div id="start-draft-explanation" class="form-group">
 							<p data-message="editor.startDraft.copy" data-translation-context="In the dialog explaining drafts before one is started: what a draft is">A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their cells, and translations. Players keep playing the live version and won't see draft changes until they are applied.</p>
 							<p data-message="editor.startDraft.finishing" data-translation-context="In the dialog explaining drafts before one is started: how a draft ends">When the draft is ready, a creator applies it with Apply Draft at the top of the editor, and players see everything changed in it at once. Discard Draft deletes it instead, leaving the live version as it is.</p>
@@ -1439,10 +1452,11 @@
 							<button id="start-draft-submit" class="draft" type="submit" data-shortcut="Alt+S"></button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="start-draft-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="universe-export-dialog" class="panel dialog" aria-labelledby="universe-export-title" aria-describedby="universe-export-explanation universe-export-draft">
 					<form id="universe-export-form" class="form">
-						<h2 id="universe-export-title"></h2>
+						<h2 id="universe-export-title" class="dialog-header"></h2>
 						<p id="universe-export-explanation" data-message="editor.universeExport.explanation" data-translation-context="In the dialog Export Universe opens on the editor's Universe tab: what the zip file it downloads holds, which depends on the player's role (beta testers can't export)">Exports everything you can edit in the universe as a zip file, apart from players' characters and audit history.</p>
 						<p id="universe-export-draft" data-message="editor.universeExport.draft" data-translation-context="In the dialog Export Universe opens on the editor's Universe tab, while the universe's draft (a copy players don't see until it is applied) is open: the zip file holds the draft, not the version players play" hidden>You're exporting the draft copy of the universe, not its live version.</p>
 						<p id="universe-export-error" class="form-error" role="alert" hidden></p>
@@ -1452,10 +1466,11 @@
 							<button id="universe-export-submit" type="submit" data-shortcut="Alt+S" aria-describedby="universe-export-error" data-message="editor.universeExport.submit" data-translation-context="Button in the dialog Export Universe opens on the editor's Universe tab that makes the universe's zip file and downloads it"><!-- icon ph:download-simple -->Export Universe</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="universe-export-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="universe-import-draft-dialog" class="panel dialog" aria-labelledby="universe-import-draft-title" aria-describedby="universe-import-draft-text">
 					<form id="universe-import-draft-form" class="form">
-						<h2 id="universe-import-draft-title" data-message="editor.universeImport.title" data-translation-context="Title of the dialog Import Universe opens on the editor's Universe tab, which imports a zip file Export Universe made into the universe's draft">Import into the Draft</h2>
+						<h2 id="universe-import-draft-title" class="dialog-header" data-message="editor.universeImport.title" data-translation-context="Title of the dialog Import Universe opens on the editor's Universe tab, which imports a zip file Export Universe made into the universe's draft">Import into the Draft</h2>
 						<p id="universe-import-draft-text"></p>
 						<p id="universe-import-draft-unsaved" data-message="editor.startDraft.unsaved" data-translation-context="In the dialog explaining drafts before one is started, when the editor has unsaved changes: they are saved first, so the draft starts with them" hidden>Your unsaved changes are saved to the live version first, so the draft starts with them.</p>
 						<p id="universe-import-draft-error" class="form-error" role="alert" hidden></p>
@@ -1466,10 +1481,11 @@
 							<button id="universe-import-draft-open" type="submit" class="draft" data-shortcut="Alt+O" data-message="editor.universeImport.openDraftButton" data-translation-context="Button in the dialog Import Universe opens while the editor shows the universe's live version and the universe has a draft: opens the draft, then the dialog importing a file into it" hidden><!-- icon ph:copy -->Open Draft</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="universe-import-draft-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="universe-import-dialog" class="panel dialog" aria-labelledby="universe-import-title" aria-describedby="universe-import-explanation">
 					<form id="universe-import-form" class="form" novalidate>
-						<h2 id="universe-import-title" data-message="editor.universeImport.title" data-translation-context="Title of the dialog Import Universe opens on the editor's Universe tab, which imports a zip file Export Universe made into the universe's draft">Import into the Draft</h2>
+						<h2 id="universe-import-title" class="dialog-header" data-message="editor.universeImport.title" data-translation-context="Title of the dialog Import Universe opens on the editor's Universe tab, which imports a zip file Export Universe made into the universe's draft">Import into the Draft</h2>
 						<p id="universe-import-explanation" data-message="editor.universeImport.explanation" data-translation-context="In the dialog importing a zip file Export Universe made into the universe's draft (a copy players don't see until it is applied), above the field choosing the file">Imports a zip file Export Universe made into the draft. The contents of the draft universe will be replaced with the contents of the import.</p>
 						<label data-message="editor.universeImport.file" data-translation-context="Label of the field choosing the zip file to import into the universe's draft">
 							File
@@ -1496,10 +1512,11 @@
 							<button id="universe-import-submit" type="submit" data-shortcut="Alt+I" aria-describedby="universe-import-error universe-import-unsaved" disabled data-message="editor.universeImport.submit" data-translation-context="Button in the dialog importing a zip file into the universe's draft that imports it, saving it to the draft at once"><!-- icon ph:upload-simple -->Import into Draft</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="universe-import-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="universe-delete-dialog" class="panel dialog" aria-labelledby="universe-delete-title" aria-describedby="universe-delete-intro">
 					<form id="universe-delete-form" class="form" novalidate>
-						<h2 id="universe-delete-title"></h2>
+						<h2 id="universe-delete-title" class="dialog-header"></h2>
 						<p id="universe-delete-intro"></p>
 						<ul id="universe-delete-list" class="universe-delete-list" hidden></ul>
 						<p id="universe-delete-admin" class="notice" data-message="editor.universeDelete.asAdmin" data-translation-context="In the first dialog that deletes a universe, for one of the site's admins deleting it as an admin: the universe's editors aren't told which admin deleted it, but the site's admin records keep it" hidden>You're deleting it as one of the site's admins. Its editors are told the site's admins deleted it, and the site's admin records keep its name and who deleted it.</p>
@@ -1511,10 +1528,11 @@
 							<button id="universe-delete-submit" type="submit" class="danger" aria-describedby="universe-delete-error" disabled data-message="editor.universeDelete.next" data-translation-context="Button in the first dialog that deletes a universe: opens a second dialog that checks it's the player before deleting it"><!-- icon ph:trash -->Delete Universe</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="universe-delete-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="universe-delete-confirm-dialog" class="panel dialog" aria-labelledby="universe-delete-confirm-title" aria-describedby="universe-delete-confirm-question">
 					<form id="universe-delete-confirm-form" class="form" novalidate>
-						<h2 id="universe-delete-confirm-title"></h2>
+						<h2 id="universe-delete-confirm-title" class="dialog-header"></h2>
 						<p id="universe-delete-confirm-question"></p>
 						<!-- Not shown: tells password managers which account the password is for -->
 						<input id="universe-delete-email" type="email" autocomplete="username" hidden />
@@ -1548,10 +1566,11 @@
 							<button id="universe-delete-confirm-cancel" type="button" data-message="characterDelete.mistake" data-translation-context="Button that closes the last question before deleting a character, the player's account or a universe, keeping it. A playful way of saying Cancel">I've Made A Terrible Mistake</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="universe-delete-confirm-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="tile-delete-dialog" class="panel dialog" aria-labelledby="tile-delete-title" aria-describedby="tile-delete-question">
 					<form id="tile-delete-form" class="form">
-						<h2 id="tile-delete-title" data-message="editor.tileDelete.title" data-translation-context="Title of the dialog that asks before deleting a tile">Delete Tile</h2>
+						<h2 id="tile-delete-title" class="dialog-header" data-message="editor.tileDelete.title" data-translation-context="Title of the dialog that asks before deleting a tile">Delete Tile</h2>
 						<p id="tile-delete-question"></p>
 						<p id="tile-delete-status" class="hint" role="status"></p>
 						<div id="tile-delete-replacement-field" hidden>
@@ -1570,10 +1589,11 @@
 							<button id="tile-delete-submit" type="submit" class="danger" aria-describedby="tile-delete-outside-text tile-delete-error" data-message="editor.tileDelete.submit" data-translation-context="Button in the dialog that asks before deleting a tile: marks the tile to delete when the Tilesets tab is saved"><!-- icon ph:trash -->Delete</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="tile-delete-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="tile-replace-dialog" class="panel dialog option-dialog" aria-labelledby="tile-replace-title" aria-describedby="tile-replace-intro">
 					<form id="tile-replace-form" class="form">
-						<h2 id="tile-replace-title" data-message="editor.tileReplace.title" data-translation-context="Title of the dialog that asks what regions and areas get as their default tile instead of a tile being deleted, or no longer for indoors or outdoors">Replace Default Tile</h2>
+						<h2 id="tile-replace-title" class="dialog-header" data-message="editor.tileReplace.title" data-translation-context="Title of the dialog that asks what regions and areas get as their default tile instead of a tile being deleted, or no longer for indoors or outdoors">Replace Default Tile</h2>
 						<p id="tile-replace-intro"></p>
 						<p id="tile-replace-status" class="hint" role="status"></p>
 						<div id="tile-replace-fields" class="tile-replace-fields" hidden>
@@ -1598,10 +1618,11 @@
 							<button id="tile-replace-submit" type="submit" aria-describedby="tile-replace-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="tile-replace-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="tile-graphic-dialog" class="panel dialog" aria-labelledby="tile-graphic-title">
 					<form id="tile-graphic-form" class="form">
-						<h2 id="tile-graphic-title" data-message="editor.tileGraphic.title" data-translation-context="Title of the dialog for uploading a tileset: a picture of a terrain that tiles can be drawn with">Upload Tileset Image</h2>
+						<h2 id="tile-graphic-title" class="dialog-header" data-message="editor.tileGraphic.title" data-translation-context="Title of the dialog for uploading a tileset: a picture of a terrain that tiles can be drawn with">Upload Tileset Image</h2>
 						<fieldset class="choice">
 							<legend data-message="editor.tileGraphic.format" data-translation-context="Heading of the choice of how an uploaded tileset's picture is laid out: 15 tiles that blend with the ground, or 47 drawn over it">Layout</legend>
 							<label class="checkbox" data-message="editor.tileGraphic.format.dualGrid" data-translation-context="Choice of tileset layout: 15 pictures drawn where kinds of tile meet, blending into each other, for ground such as grass or water and for wall tops">
@@ -1637,10 +1658,11 @@
 							<button id="tile-graphic-submit" type="submit" aria-describedby="tile-graphic-error" data-shortcut="Alt+A" data-message="editor.tileGraphic.submit" data-translation-context="Button that adds the chosen tileset to the Tilesets tab's changes; it is uploaded when the tab is saved"><!-- icon ph:check -->Add</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="tile-graphic-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="area-add-dialog" class="panel dialog" aria-labelledby="area-add-title">
 					<form id="area-add-form" class="form">
-						<h2 id="area-add-title" data-message="editor.areaAdd.title" data-translation-context="Title of the dialog for making a new area">Add Area</h2>
+						<h2 id="area-add-title" class="dialog-header" data-message="editor.areaAdd.title" data-translation-context="Title of the dialog for making a new area">Add Area</h2>
 						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 							Name
 							<input id="area-add-name" required />
@@ -1659,10 +1681,11 @@
 							<button id="area-add-submit" type="submit" aria-describedby="area-add-error" data-shortcut="Alt+A" data-message="editor.areaAdd.submit" data-translation-context="Button that makes the new area">Add</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="area-add-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="region-add-dialog" class="panel dialog" aria-labelledby="region-add-title">
 					<form id="region-add-form" class="form">
-						<h2 id="region-add-title" data-message="editor.regionAdd.title" data-translation-context="Title of the dialog for making a new region, which groups areas">Add Region</h2>
+						<h2 id="region-add-title" class="dialog-header" data-message="editor.regionAdd.title" data-translation-context="Title of the dialog for making a new region, which groups areas">Add Region</h2>
 						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 							Name
 							<input id="region-add-name" required />
@@ -1680,10 +1703,11 @@
 							<button id="region-add-submit" type="submit" aria-describedby="region-add-error" data-shortcut="Alt+A" data-message="editor.regionAdd.submit" data-translation-context="Button that makes the new region">Add</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="region-add-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="region-delete-dialog" class="panel dialog region-delete-dialog" aria-labelledby="region-delete-title">
 					<form id="region-delete-form" class="form">
-						<h2 id="region-delete-title"></h2>
+						<h2 id="region-delete-title" class="dialog-header"></h2>
 					<p id="region-delete-lobby" class="lobby-notice" data-message="editor.regionDelete.lobby" data-translation-context="Shown in the Delete Region dialog when the region being deleted is the lobby region, chosen on the Lobby tab" hidden>This is the lobby region. Once it's deleted, the universe has no lobby to walk in until another region is chosen on the Lobby tab.</p>
 						<p id="region-delete-locked" hidden></p>
 						<section id="region-delete-only" class="region-delete-group" hidden>
@@ -1724,10 +1748,11 @@
 							<button id="region-delete-submit" type="submit" class="danger" aria-describedby="region-delete-problems" data-message="editor.region.delete" data-translation-context="Button in the region editor that deletes the region when the Areas tab is saved, after asking what happens to what is in it; also the Delete Region dialog's button">Delete Region</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="region-delete-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="area-select-dialog" class="panel dialog area-select-dialog" aria-labelledby="area-select-title">
 					<form id="area-select-form" class="form">
-						<h2 id="area-select-title" data-message="editor.areaSelect.title" data-translation-context="Title of the dialog for choosing one of the universe's areas">Choose an Area</h2>
+						<h2 id="area-select-title" class="dialog-header" data-message="editor.areaSelect.title" data-translation-context="Title of the dialog for choosing one of the universe's areas">Choose an Area</h2>
 						<p id="area-select-lobby-hint" class="hint" data-message="editor.areaSelect.lobbyAreasHint" data-translation-context="Shown in the dialog for choosing the area of the lobby's starting square, which lists only the areas below the lobby region" hidden>Only the areas below the lobby region are listed.</p>
 						<p id="area-select-starting-hint" class="hint" data-message="editor.areaSelect.startingHint" data-translation-context="Shown in the dialog for choosing where characters start, which leaves out the areas below the lobby region" hidden>The areas below the lobby region aren't listed: characters can't start in the lobby.</p>
 						<p id="area-select-neighbor-hint" class="hint" hidden></p>
@@ -1744,10 +1769,11 @@
 							<button id="area-select-submit" type="submit" aria-describedby="area-select-error" data-shortcut="Alt+C" data-message="editor.areaSelect.submit" data-translation-context="Button that chooses the area selected in the dialog">Choose</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="area-select-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="resize-dialog" class="panel dialog" aria-labelledby="resize-title">
 					<form id="resize-form" class="form">
-						<h2 id="resize-title" data-message="editor.resize.title" data-translation-context="Title of the dialog for changing an area's size">Edit Size</h2>
+						<h2 id="resize-title" class="dialog-header" data-message="editor.resize.title" data-translation-context="Title of the dialog for changing an area's size">Edit Size</h2>
 						<p class="hint" data-message="editor.resize.explanation" data-translation-context="Explains the four fields of the dialog for changing an area's size">How many cells the area reaches in each direction from its center cell (0, 0).</p>
 						<div class="resize-grid">
 							<div class="resize-side resize-north">
@@ -1801,10 +1827,11 @@
 							<button id="resize-submit" type="submit" aria-describedby="resize-warning" data-shortcut="Alt+S" data-message="editor.resize.submit" data-translation-context="Button that changes the area to the size given">Resize</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="resize-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="neighbor-add-dialog" class="panel dialog" aria-labelledby="neighbor-add-title">
 					<form id="neighbor-add-form" class="form">
-						<h2 id="neighbor-add-title" data-message="editor.neighborAdd.title" data-translation-context="Title of the dialog in the area editor that adds a new area beside the area as its neighbor, walked across without a link">Add Neighbor</h2>
+						<h2 id="neighbor-add-title" class="dialog-header" data-message="editor.neighborAdd.title" data-translation-context="Title of the dialog in the area editor that adds a new area beside the area as its neighbor, walked across without a link">Add Neighbor</h2>
 						<p id="neighbor-add-hint" class="hint"></p>
 						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 							Name
@@ -1815,9 +1842,10 @@
 							<button id="neighbor-add-submit" type="submit" data-shortcut="Alt+A" data-message="editor.neighborAdd.submit" data-translation-context="Button in the Add Neighbor dialog that adds the new area beside the area being edited">Add</button>
 						</div>
 					</form>
+					<button type="button" class="dialog-x" data-presses="neighbor-add-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="overall-map-dialog" class="panel dialog overall-map-dialog" aria-labelledby="overall-map-title">
-					<h2 id="overall-map-title" data-message="editor.overallMap.title" data-translation-context="Title of the dialog drawing the whole grid of neighboring areas an area is in, zoomed out">Overall Map</h2>
+					<h2 id="overall-map-title" class="dialog-header" data-message="editor.overallMap.title" data-translation-context="Title of the dialog drawing the whole grid of neighboring areas an area is in, zoomed out">Overall Map</h2>
 					<p class="hint" data-message="editor.overallMap.hint" data-translation-context="Explains the Overall Map dialog: each area of the grid of neighboring areas is drawn in its place, and opening one goes to its editor">Each area is drawn next to its neighbors, and the open area is marked. To edit an area, click it, or move to it with the arrow keys and press Enter.</p>
 					<div id="overall-map" class="overall-map"></div>
 					<p id="overall-map-seams" class="hint" hidden></p>
@@ -1826,11 +1854,12 @@
 					<div class="dialog-buttons">
 						<button id="overall-map-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
 					</div>
+					<button type="button" class="dialog-x" data-presses="overall-map-close" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 				<dialog id="link-dialog" class="panel dialog link-dialog" aria-labelledby="link-title">
 					<form id="link-form" class="form">
 						<fieldset id="link-fields" class="plain">
-							<h2 id="link-title"></h2>
+							<h2 id="link-title" class="dialog-header"></h2>
 							<fieldset class="choice">
 								<legend data-message="editor.link.mode" data-translation-context="Heading of the choice of what an area link does when a player steps onto its cell">When a player steps onto the cell</legend>
 								<label class="checkbox" data-message="editor.link.automatic" data-translation-context="Choice for an area link that moves the player to the other area as soon as they step onto it">
@@ -1880,6 +1909,7 @@
 							</div>
 						</fieldset>
 					</form>
+					<button type="button" class="dialog-x" data-presses="link-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 				</dialog>
 			</section>
 
@@ -1903,7 +1933,7 @@
 
 			<dialog id="confirm-dialog" class="panel dialog" aria-labelledby="confirm-title" aria-describedby="confirm-question confirm-note">
 				<form id="confirm-form" class="form">
-					<h2 id="confirm-title"></h2>
+					<h2 id="confirm-title" class="dialog-header"></h2>
 					<p id="confirm-question"></p>
 					<p id="confirm-note" hidden></p>
 					<div class="dialog-buttons">
@@ -1911,6 +1941,7 @@
 						<button id="confirm-submit" type="submit" class="danger"></button>
 					</div>
 				</form>
+				<button type="button" class="dialog-x" data-presses="confirm-cancel" data-message-title="dialog.x" data-translation-context-title="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" title="Close" data-message-aria-label="dialog.x" data-translation-context-aria-label="The X at the top of a dialog, which closes it as its Cancel or Close button does. Read by screen readers, and shown under the pointer" aria-label="Close"><!-- icon ph:x --></button>
 			</dialog>
 			<!-- include character-sheet.html -->
 		</main>

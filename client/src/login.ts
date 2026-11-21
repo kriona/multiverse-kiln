@@ -8,7 +8,7 @@ import { keepProviderLinkError, providerLinkedPageUrl, readNextPage, takeProvide
 import { forgetPlayerValues } from './rememberedValues';
 import { startCodeInputs } from './ui/codeInputs';
 import { addDevSuspiciousToggle } from './ui/devSuspicious';
-import { getElement, showNoticeScreen, showStatus } from './ui/dom';
+import { getElement, showNoticeScreen, showStatus, startDialogXs } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
 import { startPasswordToggles } from './ui/passwordToggles';
@@ -28,6 +28,7 @@ async function start(): Promise<void>
 	startLanguagePicker();
 	void startSiteSocials();
 	startShortcuts();
+	startDialogXs();
 	startPasswordToggles();
 	startCodeInputs();
 
