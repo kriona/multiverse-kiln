@@ -407,8 +407,10 @@ $editor-chat-inset: 16px;
 	}
 }
 
+// Positioned, so the text only screen readers read stays inside it as it scrolls (see .visually-hidden)
 .editor-body
 {
+	position: relative;
 	flex: 1;
 	min-height: 0;
 	overflow-y: auto;

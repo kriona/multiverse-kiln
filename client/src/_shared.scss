@@ -202,7 +202,10 @@ body
 	outline: none;
 }
 
-// Text only screen readers read, such as the live regions in partials/accessibility.html
+// Text only screen readers read, such as the live regions in partials/accessibility.html. Being
+// positioned, it is placed against the nearest positioned ancestor, so a box that scrolls on its own and
+// holds any is position: relative. Otherwise text low in the box reaches past it, and the whole page
+// scrolls down to it
 .visually-hidden
 {
 	position: absolute;

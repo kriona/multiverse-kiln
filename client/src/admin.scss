@@ -5,8 +5,10 @@
 
 @use 'shared' as *;
 
+// Positioned, so the text only screen readers read stays inside it as it scrolls (see .visually-hidden)
 .admin-page
 {
+	position: relative;
 	flex: 1;
 	overflow-y: auto;
 }
@@ -236,9 +238,11 @@
 	resize: vertical;
 }
 
-// A list's table scrolls sideways on its own when the window is too narrow for its columns
+// A list's table scrolls sideways on its own when the window is too narrow for its columns. Positioned, so
+// the text only screen readers read stays inside it (see .visually-hidden)
 .admin-table-scroll
 {
+	position: relative;
 	overflow-x: auto;
 }
 

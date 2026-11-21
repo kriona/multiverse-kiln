@@ -95,9 +95,11 @@
 	color: $text-faint;
 }
 // The area, with the side panels beside it, or under it when the window is too narrow for both; then
-// they scroll together between the toolbar and the footer
+// they scroll together between the toolbar and the footer. Positioned, so the text only screen readers
+// read stays inside it as it scrolls (see .visually-hidden)
 .lobby-body
 {
+	position: relative;
 	display: flex;
 	flex: 1;
 	flex-wrap: wrap;
